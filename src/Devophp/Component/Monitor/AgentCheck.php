@@ -27,6 +27,26 @@ class AgentCheck
         $this->statuscode = $statuscode;
     }
 
+    public function getStatusText()
+    {
+        switch ($this->statuscode) {
+            case 0:
+                return 'OK';
+                break;
+            case 1:
+                return 'Warning';
+                break;
+            case 2:
+                return 'Critical';
+                break;
+            case 3:
+                return 'Unknown';
+                break;
+            default:
+                return 'Confused';
+                break;
+        }
+    }
 
     private $serviceoutput;
     public function getServiceOutput()
