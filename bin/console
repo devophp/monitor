@@ -1,0 +1,13 @@
+#!/usr/bin/env php
+<?php
+
+// app/console
+
+use Symfony\Component\Console\Application;
+
+require_once(__DIR__ . "/../vendor/autoload.php");
+$application = new Application('Devophp monitor console tool', '1.0.0');
+$application->setCatchExceptions(false);
+$application->add(new \Devophp\Component\Monitor\Command\DaemonCommand());
+$application->add(new \Devophp\Component\Monitor\Command\SendCommand());
+$application->run();
