@@ -50,10 +50,20 @@ class DaemonCommand extends Command
         $this->logger->pushHandler(new StreamHandler(STDOUT, Logger::DEBUG));
         
         $checkdefinition1 = new CheckDefinition();
-        $checkdefinition1->setName("My First CheckDefintion");
+        $checkdefinition1->setName("Check all the users");
         $checkdefinition1->setCheck("users");
         $checkdefinition1->setArguments("-w 2 -c 3");
         $checkdefinition1->setFrequency(5);
+        $this->checkdefinitions[] = $checkdefinition1;
+        
+        $checkdefinition2 = new CheckDefinition();
+        $checkdefinition2->setName("Check all the root disks");
+        $checkdefinition2->setCheck("disk");
+        $checkdefinition2->setArguments("-w 5% -c 1% -p /");
+        $checkdefinition2->setFrequency(10);
+        $this->checkdefinitions[] = $checkdefinition2;
+        
+        
         
         $agent = new Agent();
         $agent->setHostname('joosts-macbook-pro.fritz.box');
@@ -62,9 +72,12 @@ class DaemonCommand extends Command
 
         $agentcheck = new AgentCheck();
         $agentcheck->setCheckDefinition($checkdefinition1);
-        
         $agent->addAgentCheck($agentcheck);
-        $this->checkdefinitions[] = $checkdefinition1;
+
+        $agentcheck = new AgentCheck();
+        $agentcheck->setCheckDefinition($checkdefinition2);
+        $agent->addAgentCheck($agentcheck);
+        
         
         /*
         $dbalconfig = new \Doctrine\DBAL\Configuration();
@@ -129,7 +142,9 @@ class DaemonCommand extends Command
         while (true) {
             $this->logger->debug("-----");
             $this->scheduleChecks();
-            echo json_encode($this->getStatusData(), JSON_PRETTY_PRINT) . "\n";
+            $jsonstatus = json_encode($this->getStatusData(), JSON_PRETTY_PRINT);
+            echo $jsonstatus ."\n";
+            file_put_contents("/tmp/devophp_monitor_status.json", $jsonstatus);
             $this->logger->debug("Listening for messages");
             $msg = $this->stomp->readFrame();
             if ($msg!=null) {
@@ -158,8 +173,19 @@ class DaemonCommand extends Command
             $agentdata['agentchecks'] = array();
             foreach($agent->getAgentChecks() as $agentcheck) {
                 $agentcheckdata=array();
-                $agentcheckdata['checkdefinitionname'] = $agentcheck->getCheckDefinition()->getName();
+
+                $checkdefinition = $agentcheck->getCheckDefinition();
+                
+                $checkdefinitiondata = array();
+                $checkdefinitiondata['name'] = $checkdefinition->getName();
+                $checkdefinitiondata['check'] = $checkdefinition->getCheck();
+                $checkdefinitiondata['arguments'] = $checkdefinition->getArguments();
+                $checkdefinitiondata['frequency'] = $checkdefinition->getFrequency();
+                
+                $agentcheckdata['checkdefinition'] = $checkdefinitiondata;
+                
                 $agentcheckdata['statuscode'] = $agentcheck->getStatusCode();
+                $agentcheckdata['statustext'] = $agentcheck->getStatusText();
                 $agentcheckdata['serviceoutput'] = $agentcheck->getServiceOutput();
                 $agentcheckdata['serviceperfdata'] = $agentcheck->getServicePerfData();
                 $agentcheckdata['lastcheckstamp'] = $agentcheck->getLastCheckStamp();
